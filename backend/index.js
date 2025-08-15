@@ -31,8 +31,13 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "frontend")));
 
-// Handle favicon
+// Serve favicon
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'favicon.ico')));
+
+// Serve index.html at root
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
 
 // --- AUTH --- //
 app.post("/register", (req, res) => {
