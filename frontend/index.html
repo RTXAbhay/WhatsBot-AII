@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsBot AI - Professional Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- Login / Register Modal -->
+<div id="auth-container" class="auth-container">
+  <div class="auth-card">
+    <h2>Welcome to WhatsBot AI</h2>
+    <div id="login-form">
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button id="login-btn">Login</button>
+      <p>Don't have an account? <span id="show-register">Register</span></p>
+    </div>
+    <div id="register-form" class="hidden">
+      <input type="text" id="reg-username" placeholder="Username">
+      <input type="password" id="reg-password" placeholder="Password">
+      <input type="text" id="reg-secret" placeholder="Secret Code">
+      <button id="register-btn">Register</button>
+      <p>Already have an account? <span id="show-login">Login</span></p>
+    </div>
+    <p id="auth-msg" class="auth-msg"></p>
+  </div>
+</div>
+
+<!-- Main Dashboard -->
+<div id="dashboard" class="hidden">
+  <header>
+    <h1>WhatsBot AI Dashboard</h1>
+    <button id="logout-btn" class="btn-red">Logout</button>
+    <button id="whatsapp-logout-btn" class="btn-orange">Logout WhatsApp</button> <!-- NEW -->
+  </header>
+
+  <section class="grid-container">
+
+    <!-- QR Code Section -->
+    <div class="card">
+      <h3>WhatsApp QR Login</h3>
+      <canvas id="qr-canvas"></canvas>
+      <button id="reload-qr" class="btn-blue">Reload QR</button>
+      <p id="qr-status">Waiting for QR...</p>
+    </div>
+
+    <!-- AI Settings -->
+    <div class="card">
+      <h3>AI Instructions & Settings</h3>
+      <textarea id="ai-instructions" placeholder="Write your AI instructions (max 500 words)"></textarea>
+
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="toggle-new" checked>
+          <span class="slider"></span>
+        </label>
+        <span>Reply to New Messages</span>
+      </div>
+
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="toggle-prev" checked>
+          <span class="slider"></span>
+        </label>
+        <span>Reply to Previous Messages</span>
+      </div>
+
+      <button id="save-settings" class="btn-green">Save Settings</button>
+    </div>
+
+    <!-- AI Reply Logs -->
+    <div class="card">
+      <h3>AI Reply Logs</h3>
+      <div id="ai-logs" class="logs"></div>
+    </div>
+
+  </section>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
