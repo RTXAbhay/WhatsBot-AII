@@ -1,2 +1,3 @@
-2025/08/15-20:48:02.071 26f8 Creating DB E:\apps\WhatsBot-AI\sessions\session-abhay\Default\Session Storage since it was missing.
-2025/08/15-20:48:02.080 26f8 Reusing MANIFEST E:\apps\WhatsBot-AI\sessions\session-abhay\Default\Session Storage/MANIFEST-000001
+2025/08/15-21:11:25.919 a28 Reusing MANIFEST E:\apps\WhatsBot-AI\sessions\session-abhay\Default\Session Storage/MANIFEST-000001
+2025/08/15-21:11:25.920 a28 Recovering log #3
+2025/08/15-21:11:25.920 a28 Reusing old log E:\apps\WhatsBot-AI\sessions\session-abhay\Default\Session Storage/000003.log 

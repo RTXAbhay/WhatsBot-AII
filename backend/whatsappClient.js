@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const fs = require("fs-extra");
 const qrcode = require("qrcode");
-const puppeteer = require("puppeteer");
+const chromium = require("chrome-aws-lambda"); // Use AWS Lambda compatible Chromium
 const { CohereClient } = require("cohere-ai");
 
 // Cohere client
@@ -20,7 +20,7 @@ let clients = {};
  * Initialize WhatsApp client per user
  */
 async function initWhatsAppClient(username, socket, forceNewSession = false) {
-  // Check and destroy previous client if fully initialized
+  // Destroy previous client safely
   if (clients[username]?.initialized) {
     try {
       await clients[username].destroy();
@@ -43,24 +43,15 @@ async function initWhatsAppClient(username, socket, forceNewSession = false) {
     authStrategy: new LocalAuth({ clientId: username, dataPath: SESSIONS_DIR }),
     puppeteer: {
       headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-gpu"
-      ],
-      // Render Chromium path or fallback to Puppeteer default
-      executablePath: process.env.CHROME_PATH || (await puppeteer.executablePath()).catch(() => null)
-    }
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+    },
   });
 
   client.initialized = false;
 
-  // QR code
+  // QR code generation
   client.once("qr", async (qr) => {
     try {
       const qrImage = await qrcode.toDataURL(qr);

@@ -112,7 +112,12 @@ io.on("connection", (socket) => {
         console.error("Error destroying previous client:", err);
       }
     }
-    await initWhatsAppClient(username, socket);
+    try {
+      await initWhatsAppClient(username, socket);
+    } catch (err) {
+      console.error("Error initializing WhatsApp client:", err);
+      socket.emit("client-error", { msg: "Failed to initialize WhatsApp" });
+    }
     socket.emit("load-ai-replies", aiReplies);
   });
 
