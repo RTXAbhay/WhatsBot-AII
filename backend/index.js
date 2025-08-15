@@ -5,7 +5,8 @@ const socketIo = require("socket.io");
 const fs = require("fs-extra");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const { initWhatsAppClient } = require("./whatsappClient");
+const path = require("path");
+const { initWhatsAppClient, clients } = require("./whatsappClient");
 
 const app = express();
 const server = http.createServer(app);
@@ -25,9 +26,13 @@ function saveAIReplies() {
   fs.writeJsonSync(AI_REPLIES_FILE, aiReplies);
 }
 
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static("frontend"));
+app.use(express.static(path.join(__dirname, "frontend")));
+
+// Handle favicon
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'favicon.ico')));
 
 // --- AUTH --- //
 app.post("/register", (req, res) => {
@@ -73,7 +78,6 @@ app.post("/saveToggles", (req, res) => {
 // --- LOGOUT WhatsApp --- //
 app.post("/logoutWhatsApp", async (req, res) => {
   const { username } = req.body;
-  const { clients } = require("./whatsappClient");
   if (clients[username]) {
     try {
       await clients[username].destroy();
@@ -91,6 +95,15 @@ io.on("connection", (socket) => {
   console.log("New socket connected");
 
   socket.on("init-client", async ({ username }) => {
+    // Destroy previous client if exists
+    if (clients[username]) {
+      try {
+        await clients[username].destroy();
+        delete clients[username];
+      } catch (err) {
+        console.error("Error destroying previous client:", err);
+      }
+    }
     await initWhatsAppClient(username, socket);
     socket.emit("load-ai-replies", aiReplies);
   });
@@ -102,7 +115,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Use Render's dynamic port
+// ✅ Render dynamic port or local 3000
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

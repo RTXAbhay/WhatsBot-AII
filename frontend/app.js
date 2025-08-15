@@ -1,4 +1,7 @@
-const socket = io();
+const socket = io('https://whatsbot-aii.onrender.com', {
+  transports: ["websocket", "polling"]
+});
+
 
 // Elements
 const authContainer = document.getElementById('auth-container');
