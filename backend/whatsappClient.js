@@ -11,17 +11,17 @@ const co = new CohereClient({ apiKey: process.env.CO_API_KEY });
 const SESSIONS_DIR = "./sessions";
 const MESSAGES_FILE = "./messages.json";
 
+// Ensure sessions folder exists
+if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR);
+
 let clients = {};
 
 /**
  * Initialize WhatsApp client per user
- * @param {string} username - Current username
- * @param {object} socket - Socket.IO instance
- * @param {boolean} forceNewSession - If true, deletes old session for fresh QR login
  */
 async function initWhatsAppClient(username, socket, forceNewSession = false) {
-  // Destroy existing client
-  if (clients[username]) {
+  // Check and destroy previous client if fully initialized
+  if (clients[username]?.initialized) {
     try {
       await clients[username].destroy();
       console.log(`Destroyed previous client for ${username}`);
@@ -53,26 +53,34 @@ async function initWhatsAppClient(username, socket, forceNewSession = false) {
         "--single-process",
         "--disable-gpu"
       ],
-      executablePath: process.env.CHROME_PATH || (await puppeteer.executablePath())
+      // Render Chromium path or fallback to Puppeteer default
+      executablePath: process.env.CHROME_PATH || (await puppeteer.executablePath()).catch(() => null)
     }
   });
 
-  // QR code generation
-  client.once("qr", async (qr) => {
-    const qrImage = await qrcode.toDataURL(qr);
-    socket.emit("qr", { qr: qrImage, user: username });
-  });
+  client.initialized = false;
 
-  // WhatsApp ready
-  client.once("ready", () => {
-    console.log(username + " WhatsApp Ready");
-    socket.emit("ready", { user: username });
-    socket.emit("login-successful", { name: client.info.pushname || username });
+  // QR code
+  client.once("qr", async (qr) => {
+    try {
+      const qrImage = await qrcode.toDataURL(qr);
+      socket.emit("qr", { qr: qrImage, user: username });
+    } catch (err) {
+      console.error("QR generation error:", err);
+    }
   });
 
   // Authenticated
   client.once("authenticated", () => {
     console.log(username + " Authenticated");
+  });
+
+  // Ready
+  client.once("ready", () => {
+    console.log(username + " WhatsApp Ready");
+    client.initialized = true;
+    socket.emit("ready", { user: username });
+    socket.emit("login-successful", { name: client.info.pushname || username });
   });
 
   // Message handler
@@ -111,10 +119,10 @@ async function initWhatsAppClient(username, socket, forceNewSession = false) {
 }
 
 /**
- * Logout / destroy WhatsApp client
+ * Logout / destroy WhatsApp client safely
  */
 async function logoutWhatsApp(username) {
-  if (clients[username]) {
+  if (clients[username]?.initialized) {
     try {
       await clients[username].destroy();
       delete clients[username];
@@ -143,9 +151,7 @@ async function sendAIReply(message, instructions) {
       max_tokens: 200
     });
 
-    if (response?.text) return response.text;
-    return "No reply generated";
-
+    return response?.text || "No reply generated";
   } catch (err) {
     console.error("Cohere Chat API error:", err);
     return "Error generating reply";
