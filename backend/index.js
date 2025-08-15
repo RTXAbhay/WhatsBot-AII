@@ -103,22 +103,20 @@ io.on("connection", (socket) => {
   console.log("New socket connected");
 
   socket.on("init-client", async ({ username }) => {
-    // Destroy previous client if exists
-    if (clients[username]) {
-      try {
+    try {
+      // Destroy previous client if exists
+      if (clients[username]) {
         await clients[username].destroy();
         delete clients[username];
-      } catch (err) {
-        console.error("Error destroying previous client:", err);
       }
-    }
-    try {
+
       await initWhatsAppClient(username, socket);
+      socket.emit("load-ai-replies", aiReplies);
+
     } catch (err) {
       console.error("Error initializing WhatsApp client:", err);
-      socket.emit("client-error", { msg: "Failed to initialize WhatsApp" });
+      socket.emit("client-error", { msg: "Failed to initialize WhatsApp client" });
     }
-    socket.emit("load-ai-replies", aiReplies);
   });
 
   socket.on("ai-reply", (msg) => {

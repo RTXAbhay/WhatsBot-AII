@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const fs = require("fs-extra");
 const qrcode = require("qrcode");
-const chromium = require("chrome-aws-lambda"); // Use AWS Lambda compatible Chromium
+const chromium = require("chrome-aws-lambda");
 const { CohereClient } = require("cohere-ai");
 
 // Cohere client
@@ -39,14 +39,17 @@ async function initWhatsAppClient(username, socket, forceNewSession = false) {
     console.log(`Deleted old session folder for ${username}`);
   }
 
+  const executablePath = await chromium.executablePath || null;
+
   const client = new Client({
     authStrategy: new LocalAuth({ clientId: username, dataPath: SESSIONS_DIR }),
     puppeteer: {
       headless: true,
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-    },
+      executablePath,
+      ignoreHTTPSErrors: true
+    }
   });
 
   client.initialized = false;

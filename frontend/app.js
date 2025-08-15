@@ -32,118 +32,161 @@ const aiLogs = document.getElementById('ai-logs');
 let currentUser = null;
 let qrInterval = null;
 
-// Toggle auth forms
+// --- Toggle auth forms ---
 showRegister.addEventListener('click', () => {
   loginForm.classList.add('hidden');
   registerForm.classList.remove('hidden');
-  authMsg.textContent='';
+  authMsg.textContent = '';
 });
 showLogin.addEventListener('click', () => {
   registerForm.classList.add('hidden');
   loginForm.classList.remove('hidden');
-  authMsg.textContent='';
+  authMsg.textContent = '';
 });
 
-// Login
+// --- Login ---
 loginBtn.addEventListener('click', async () => {
   const res = await fetch(`${window.location.origin}/login`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ username: usernameInput.value, password: passwordInput.value })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: usernameInput.value, password: passwordInput.value })
   });
   const data = await res.json();
-  if(data.success){
+  if (data.success) {
     currentUser = usernameInput.value;
+    localStorage.setItem('whatsbotUser', currentUser);
     authContainer.classList.add('hidden');
     dashboard.classList.remove('hidden');
+    loadUserSettings();
     initSocket();
-  } else { authMsg.textContent = data.msg; }
+  } else {
+    authMsg.textContent = data.msg;
+  }
 });
 
-// Register
+// --- Register ---
 registerBtn.addEventListener('click', async () => {
   const res = await fetch(`${window.location.origin}/register`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ username: regUsername.value, password: regPassword.value, secret: regSecret.value })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: regUsername.value, password: regPassword.value, secret: regSecret.value })
   });
   const data = await res.json();
-  if(data.success){
+  if (data.success) {
     authMsg.textContent = 'Registered! Please login.';
     registerForm.classList.add('hidden');
     loginForm.classList.remove('hidden');
-  } else { authMsg.textContent = data.msg; }
+  } else {
+    authMsg.textContent = data.msg;
+  }
 });
 
-// App Logout
+// --- App Logout ---
 logoutBtn.addEventListener('click', () => {
-  currentUser=null;
+  currentUser = null;
+  localStorage.removeItem('whatsbotUser');
   dashboard.classList.add('hidden');
   authContainer.classList.remove('hidden');
   clearInterval(qrInterval);
 });
 
-// WhatsApp Logout
+// --- WhatsApp Logout ---
 whatsappLogoutBtn.addEventListener('click', async () => {
-  if(!currentUser) return alert('No user logged in!');
+  if (!currentUser) return alert('No user logged in!');
   const res = await fetch(`${window.location.origin}/logoutWhatsApp`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ username: currentUser })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: currentUser })
   });
   const data = await res.json();
-  if(data.success){
+  if (data.success) {
     qrStatus.textContent = 'WhatsApp session logged out. Scan a new QR to login.';
     alert('WhatsApp session logged out successfully!');
-    qrCanvas.getContext('2d').clearRect(0,0,qrCanvas.width, qrCanvas.height);
+    qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
     clearInterval(qrInterval);
   } else {
-    alert('Failed to logout WhatsApp session: '+data.msg);
+    alert('Failed to logout WhatsApp session: ' + data.msg);
   }
 });
 
-// Reload QR manually
+// --- Reload QR manually ---
 reloadQR.addEventListener('click', () => {
-  if(!currentUser) return alert('Login first to reload QR');
-  socket.emit('init-client',{ username: currentUser });
+  if (!currentUser) return alert('Login first to reload QR');
+  socket.emit('init-client', { username: currentUser });
 });
 
-// Socket Init
-function initSocket(){
-  // Clear previous interval if exists
-  if(qrInterval) clearInterval(qrInterval);
+// --- Socket Init ---
+function initSocket() {
+  if (qrInterval) clearInterval(qrInterval);
 
-  socket.emit('init-client',{ username: currentUser });
+  socket.emit('init-client', { username: currentUser });
 
   socket.on('qr', data => {
-    qrStatus.textContent='Scan QR with WhatsApp';
+    qrStatus.textContent = 'Scan QR with WhatsApp';
     const ctx = qrCanvas.getContext('2d');
     const img = new Image();
     img.src = data.qr;
-    img.onload = ()=>{ qrCanvas.width=img.width; qrCanvas.height=img.height; ctx.drawImage(img,0,0); };
+    img.onload = () => { qrCanvas.width = img.width; qrCanvas.height = img.height; ctx.drawImage(img, 0, 0); };
   });
 
-  socket.on('ready', ()=>{ qrStatus.textContent='WhatsApp Ready'; });
-  socket.on('login-successful', data => { qrStatus.textContent=`Logged in as ${data.name}`; });
+  socket.on('ready', () => { qrStatus.textContent = 'WhatsApp Ready'; });
+  socket.on('login-successful', data => { qrStatus.textContent = `Logged in as ${data.name}`; });
 
-  // AI Replies
   socket.on('ai-reply', msg => {
     const p = document.createElement('p');
     p.textContent = msg;
     aiLogs.prepend(p);
   });
 
-  // Auto-refresh QR every 5 minutes
   qrInterval = setInterval(() => {
-    if(currentUser) socket.emit('init-client',{ username: currentUser });
-  }, 5*60*1000);
+    if (currentUser) socket.emit('init-client', { username: currentUser });
+  }, 5 * 60 * 1000);
 }
 
-// Save Settings
+// --- Save Settings ---
 saveSettings.addEventListener('click', async () => {
   const toggles = { current: toggleNew.checked, previous: togglePrev.checked };
   const instructions = aiInstructions.value;
-  await fetch(`${window.location.origin}/saveInstructions`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: currentUser, instructions }) });
-  await fetch(`${window.location.origin}/saveToggles`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: currentUser, toggles }) });
+  await fetch(`${window.location.origin}/saveInstructions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: currentUser, instructions })
+  });
+  await fetch(`${window.location.origin}/saveToggles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: currentUser, toggles })
+  });
+
+  // Save locally
+  localStorage.setItem(`instructions_${currentUser}`, instructions);
+  localStorage.setItem(`toggles_${currentUser}`, JSON.stringify(toggles));
   alert('Settings saved!');
+});
+
+// --- Load user settings from localStorage ---
+function loadUserSettings() {
+  if (!currentUser) return;
+
+  const savedInstructions = localStorage.getItem(`instructions_${currentUser}`);
+  if (savedInstructions) aiInstructions.value = savedInstructions;
+
+  const savedToggles = localStorage.getItem(`toggles_${currentUser}`);
+  if (savedToggles) {
+    const t = JSON.parse(savedToggles);
+    toggleNew.checked = t.current;
+    togglePrev.checked = t.previous;
+  }
+}
+
+// --- Auto-login if user exists ---
+document.addEventListener('DOMContentLoaded', () => {
+  const savedUser = localStorage.getItem('whatsbotUser');
+  if (savedUser) {
+    currentUser = savedUser;
+    authContainer.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    loadUserSettings();
+    initSocket();
+  }
 });
