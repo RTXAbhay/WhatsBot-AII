@@ -12,8 +12,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: "*" } });
 
-const USERS_FILE = "./users.json";
-const AI_REPLIES_FILE = "./ai-replies.json";
+const USERS_FILE = path.join(__dirname, "..", "frontend", "users.json");
+const AI_REPLIES_FILE = path.join(__dirname, "..", "frontend", "ai-replies.json");
 
 // Load users
 let users = fs.existsSync(USERS_FILE) ? fs.readJsonSync(USERS_FILE) : {};
@@ -29,14 +29,18 @@ function saveAIReplies() {
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, "frontend")));
 
-// Serve favicon
-app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'favicon.ico')));
+// Serve frontend files
+app.use(express.static(path.join(__dirname, "..", "frontend")));
 
-// Serve index.html at root
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+// Handle favicon
+app.get('/favicon.ico', (req, res) =>
+  res.sendFile(path.join(__dirname, "..", "frontend", "favicon.ico"))
+);
+
+// Serve index.html for root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
 });
 
 // --- AUTH --- //
