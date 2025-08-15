@@ -12,14 +12,17 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: "*" } });
 
-const USERS_FILE = path.join(__dirname, "..", "frontend", "users.json");
-const AI_REPLIES_FILE = path.join(__dirname, "..", "frontend", "ai-replies.json");
+// Absolute paths
+const USERS_FILE = path.join(__dirname, "users.json");
+const AI_REPLIES_FILE = path.join(__dirname, "ai-replies.json");
 
-// Load users
-let users = fs.existsSync(USERS_FILE) ? fs.readJsonSync(USERS_FILE) : {};
+// Ensure files exist
+if (!fs.existsSync(USERS_FILE)) fs.writeJsonSync(USERS_FILE, {});
+if (!fs.existsSync(AI_REPLIES_FILE)) fs.writeJsonSync(AI_REPLIES_FILE, []);
 
-// Load AI replies
-let aiReplies = fs.existsSync(AI_REPLIES_FILE) ? fs.readJsonSync(AI_REPLIES_FILE) : [];
+// Load users and AI replies
+let users = fs.readJsonSync(USERS_FILE);
+let aiReplies = fs.readJsonSync(AI_REPLIES_FILE);
 
 // Helper to save AI replies
 function saveAIReplies() {
@@ -29,21 +32,17 @@ function saveAIReplies() {
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-
-// Serve frontend files
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Handle favicon
-app.get('/favicon.ico', (req, res) =>
-  res.sendFile(path.join(__dirname, "..", "frontend", "favicon.ico"))
-);
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, '../frontend', 'favicon.ico')));
 
-// Serve index.html for root route
+// Serve index.html for root
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
+  res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
 });
 
-// --- AUTH --- //
+// --- AUTH ---
 app.post("/register", (req, res) => {
   const { username, password, secret } = req.body;
   if (secret !== process.env.REGISTER_SECRET) {
@@ -84,7 +83,7 @@ app.post("/saveToggles", (req, res) => {
   res.json({ success: false });
 });
 
-// --- LOGOUT WhatsApp --- //
+// --- LOGOUT WhatsApp ---
 app.post("/logoutWhatsApp", async (req, res) => {
   const { username } = req.body;
   if (clients[username]) {
@@ -99,7 +98,7 @@ app.post("/logoutWhatsApp", async (req, res) => {
   res.json({ success: false, msg: "No active session" });
 });
 
-// --- SOCKET.IO --- //
+// --- SOCKET.IO ---
 io.on("connection", (socket) => {
   console.log("New socket connected");
 
@@ -124,7 +123,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Render dynamic port or local 3000
+// ✅ Render dynamic port or fallback to 3000
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

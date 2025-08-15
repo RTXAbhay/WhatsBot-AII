@@ -1,7 +1,6 @@
-const socket = io('https://whatsbot-aii.onrender.com', {
+const socket = io(window.location.origin, {
   transports: ["websocket", "polling"]
 });
-
 
 // Elements
 const authContainer = document.getElementById('auth-container');
@@ -20,7 +19,7 @@ const authMsg = document.getElementById('auth-msg');
 
 const dashboard = document.getElementById('dashboard');
 const logoutBtn = document.getElementById('logout-btn');
-const whatsappLogoutBtn = document.getElementById('whatsapp-logout-btn'); // New button
+const whatsappLogoutBtn = document.getElementById('whatsapp-logout-btn');
 const qrCanvas = document.getElementById('qr-canvas');
 const reloadQR = document.getElementById('reload-qr');
 const qrStatus = document.getElementById('qr-status');
@@ -47,7 +46,7 @@ showLogin.addEventListener('click', () => {
 
 // Login
 loginBtn.addEventListener('click', async () => {
-  const res = await fetch('/login', {
+  const res = await fetch(`${window.location.origin}/login`, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ username: usernameInput.value, password: passwordInput.value })
@@ -63,7 +62,7 @@ loginBtn.addEventListener('click', async () => {
 
 // Register
 registerBtn.addEventListener('click', async () => {
-  const res = await fetch('/register', {
+  const res = await fetch(`${window.location.origin}/register`, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ username: regUsername.value, password: regPassword.value, secret: regSecret.value })
@@ -87,7 +86,7 @@ logoutBtn.addEventListener('click', () => {
 // WhatsApp Logout
 whatsappLogoutBtn.addEventListener('click', async () => {
   if(!currentUser) return alert('No user logged in!');
-  const res = await fetch('/logoutWhatsApp', {
+  const res = await fetch(`${window.location.origin}/logoutWhatsApp`, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ username: currentUser })
@@ -111,9 +110,11 @@ reloadQR.addEventListener('click', () => {
 
 // Socket Init
 function initSocket(){
+  // Clear previous interval if exists
+  if(qrInterval) clearInterval(qrInterval);
+
   socket.emit('init-client',{ username: currentUser });
 
-  // QR
   socket.on('qr', data => {
     qrStatus.textContent='Scan QR with WhatsApp';
     const ctx = qrCanvas.getContext('2d');
@@ -142,7 +143,7 @@ function initSocket(){
 saveSettings.addEventListener('click', async () => {
   const toggles = { current: toggleNew.checked, previous: togglePrev.checked };
   const instructions = aiInstructions.value;
-  await fetch('/saveInstructions',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: currentUser, instructions }) });
-  await fetch('/saveToggles',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: currentUser, toggles }) });
+  await fetch(`${window.location.origin}/saveInstructions`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: currentUser, instructions }) });
+  await fetch(`${window.location.origin}/saveToggles`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: currentUser, toggles }) });
   alert('Settings saved!');
 });
